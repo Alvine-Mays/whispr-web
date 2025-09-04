@@ -131,3 +131,22 @@ hr.sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 .footer-links a { color: var(--muted); text-decoration: none; transition: color .2s ease; }
 .footer-links a:hover { color: var(--primary); }
 .footer-copy { font-size: 12px; opacity: 0.8; }
+
+/* Light theme variables */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f9fc;
+  --bg-soft: #ffffff;
+  --text: #0b1020;
+  --muted: #667085;
+  --card: rgba(255, 255, 255, 0.9);
+  --border: rgba(0, 0, 0, 0.08);
+  --shadow-color: rgba(190, 41, 236, 0.25);
+}
+
+/* Unread state */
+.card.unread { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.card.unread .meta::before { content: '●'; color: var(--accent); margin-right: 6px; font-size: 10px; vertical-align: middle; }
+
+/* Share row adjustments */
+.share-row .icon-btn { justify-content: center; min-width: 100px; }

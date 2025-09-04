@@ -5,11 +5,12 @@ import { applyI18n, detectLocale, setLocale, t } from './i18n.js';
 import { initNotify, notyf } from './notify.js';
 import { Api } from './api.js';
 import { shareMessageImage, generateMessageImage } from './share-image.js';
-import { VAPID_PUBLIC_KEY } from './config.js';
+import { VAPID_PUBLIC_KEY, BASE_URL } from './config.js';
 
 const TOKEN_KEY = 'whispr_token';
 const BACKOFFS = [3000, 5000, 8000, 13000, 21000, 34000];
 let backoffIndex = 0; let lastSeenId = null; let pollingTimer = null;
+let DASH_USERNAME = null;
 
 const REACT_KEY = 'whispr_reactions';
 function getReactions() { try { return JSON.parse(localStorage.getItem(REACT_KEY) || '{}'); } catch { return {}; } }
@@ -115,43 +116,72 @@ export async function renderMessages(container, token, status='all') {
     modalOverlay?.addEventListener('click', closeModal);
 
     for (const it of items) {
-      const card = document.createElement('div'); card.className = 'card reveal';
+      const card = document.createElement('div'); card.className = 'card reveal'; if (it.isRead === false) card.classList.add('unread');
       const clickableArea = document.createElement('div'); clickableArea.style.cursor = 'pointer';
       const text = document.createElement('div'); text.className = 'msg'; text.textContent = it.content || '';
-      const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = new Date(it.createdAt || Date.now()).toLocaleDateString();
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const created = new Date(it.createdAt || it.created_at || Date.now());
+      const diffSec = Math.max(0, Math.floor((Date.now() - created.getTime()) / 1000));
+      let rel = '';
+      if (diffSec < 60) rel = `${diffSec}s`;
+      else if (diffSec < 3600) rel = `${Math.floor(diffSec/60)}m`;
+      else if (diffSec < 86400) rel = `${Math.floor(diffSec/3600)}h`;
+      else rel = `${Math.floor(diffSec/86400)}d`;
+      meta.textContent = rel;
+      meta.title = created.toLocaleString();
 
       clickableArea.append(text, meta);
       card.append(clickableArea);
 
       clickableArea.addEventListener('click', async () => {
         modalText.textContent = it.content || '';
-        modalMeta.textContent = new Date(it.createdAt || Date.now()).toLocaleString();
-        
-        if(modalShareBtn) {
-          const newShareBtn = modalShareBtn.cloneNode(true);
-          modalShareBtn.parentNode.replaceChild(newShareBtn, modalShareBtn);
-          newShareBtn.addEventListener('click', async () => {
-              const nodeToCapture = qs('.modal-content'); 
-              const profileRes = await Api.getPublicProfile(getToken());
-              const username = profileRes.ok ? profileRes.data.username : null;
-              
-              if (navigator.canShare && navigator.canShare({ files: [new File([], 'a.png', { type: 'image/png' })] })) {
-                  const dataUrl = await generateMessageImage(nodeToCapture, username);
-                  const res = await fetch(dataUrl);
-                  const blob = await res.blob();
-                  const file = new File([blob], 'whispr.png', { type: 'image/png' });
+        modalMeta.textContent = created.toLocaleString();
 
-                  await navigator.share({
-                      title: 'CyberFusion | Whispr',
-                      text: `J'ai reçu un message anonyme ! Envoie-moi le tien sur :\n\n${window.location.origin}/${username}\n\n`,
-                      files: [file]
-                  });
-              } else {
-                  const fallbackText = `J'ai reçu un message anonyme ! Envoie-moi le tien sur :\n\n${window.location.origin}/${username}\n\n`;
-                  await shareMessageImage(nodeToCapture, username, fallbackText);
-              }
+        const link = DASH_USERNAME ? `${BASE_URL}/${DASH_USERNAME}` : '';
+        const snippet = (it.content || '').slice(0, 240);
+
+        const wa = qs('#modal-share-whatsapp'); if (wa) { wa.href = `https://wa.me/?text=${encodeURIComponent(`"${snippet}" - ${link}`)}`; wa.target = '_blank'; wa.rel = 'noopener'; }
+        const tg = qs('#modal-share-telegram'); if (tg) { tg.href = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(snippet)}`; tg.target = '_blank'; tg.rel = 'noopener'; }
+        const tw = qs('#modal-share-twitter'); if (tw) { tw.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(snippet)}&url=${encodeURIComponent(link)}`; tw.target = '_blank'; tw.rel = 'noopener'; }
+        const em = qs('#modal-share-email'); if (em) { em.href = `mailto:?subject=${encodeURIComponent('Whispr message')}&body=${encodeURIComponent(snippet + '\n\n' + link)}`; }
+
+        const nodeToCapture = qs('.modal-content'); 
+
+        const shareBtn = qs('#btn-share-image');
+        if (shareBtn) {
+          const newShareBtn = shareBtn.cloneNode(true);
+          shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+          newShareBtn.addEventListener('click', async () => {
+            const username = DASH_USERNAME;
+            if (navigator.canShare && navigator.canShare({ files: [new File([], 'a.png', { type: 'image/png' })] })) {
+              const dataUrl = await generateMessageImage(nodeToCapture, username);
+              const res = await fetch(dataUrl);
+              const blob = await res.blob();
+              const file = new File([blob], 'whispr.png', { type: 'image/png' });
+              await navigator.share({
+                title: 'CyberFusion | Whispr',
+                text: `J'ai reçu un message anonyme ! Envoie-moi le tien sur :\n\n${BASE_URL}/${username}\n\n`,
+                files: [file]
+              });
+            } else {
+              const fallbackText = `J'ai reçu un message anonyme ! Envoie-moi le tien sur :\n\n${BASE_URL}/${username}\n\n`;
+              await shareMessageImage(nodeToCapture, username, fallbackText);
+            }
           });
         }
+
+        const dlBtn = qs('#btn-download-image');
+        if (dlBtn) {
+          const newDlBtn = dlBtn.cloneNode(true);
+          dlBtn.parentNode.replaceChild(newDlBtn, dlBtn);
+          newDlBtn.addEventListener('click', async () => {
+            const dataUrl = await generateMessageImage(nodeToCapture, DASH_USERNAME);
+            const a = document.createElement('a');
+            a.href = dataUrl; a.download = 'whispr.png';
+            document.body.appendChild(a); a.click(); a.remove();
+          });
+        }
+
         modal?.classList.remove('hidden');
       });
 
@@ -218,7 +248,7 @@ function showCreateLinkPrompt() {
     if (!res.ok) { notyf?.error(res.error?.message || 'Erreur'); return; }
     const data = res.data?.data || res.data || {}; const token = data.dashboard_token; if (!token) { notyf?.error('Token manquant'); return; }
     localStorage.setItem(TOKEN_KEY, token);
-    const link = `${location.origin}/${encodeURIComponent(u)}`;
+    const link = `${BASE_URL}/${encodeURIComponent(u)}`;
     const zone = qs('#own-result'); zone.style.display = 'flex'; zone.style.flexDirection = 'column'; zone.style.gap = '8px';
     zone.innerHTML = `<div><strong>${t('your_link')||'Votre lien'}</strong><br><code>${link}</code></div><div style="display:flex; gap:8px;"><button class="icon-btn" id="own-copy-link">${t('copy')||'Copier'}</button><a class="icon-btn primary" href="/dashboard.html?token=${encodeURIComponent(token)}">${t('go_to_dashboard')||'Aller au dashboard'}</a></div>`;
     qs('#own-copy-link')?.addEventListener('click', async () => { await navigator.clipboard.writeText(link); notyf?.success(t('copied')||'Copié'); });
@@ -271,7 +301,7 @@ async function setupLanding() {
     if (!res.ok) { notyf?.error(res.error?.message || 'Erreur'); return; }
     const data = res.data?.data || res.data || {}; const token = data.dashboard_token; if (!token) { notyf?.error('Token manquant'); return; }
     localStorage.setItem(TOKEN_KEY, token);
-    const link = `${location.origin}/${encodeURIComponent(username)}`;
+    const link = `${BASE_URL}/${encodeURIComponent(username)}`;
     out.innerHTML = '';
     const card = document.createElement('div'); card.className = 'card reveal';
     card.innerHTML = `<div style="display:grid; gap:8px;"><div><strong>${t('your_link') || 'Votre lien'}</strong><br><code>${link}</code></div><div style="display:flex; gap:8px;"><button class="icon-btn" id="copy-link">${t('copy') || 'Copier'}</button><a class="icon-btn" href="${link}" target="_blank" rel="noopener">${t('open_public') || 'Ouvrir la page publique'}</a></div><hr class="sep" /><div><strong>${t('your_token') || 'Votre token'}</strong><br><code style="word-break:break-all;">${token}</code></div><div style="display:flex; gap:8px;"><button class="icon-btn" id="copy-token">${t('copy') || 'Copier'}</button><a class="icon-btn primary" href="/dashboard.html?token=${encodeURIComponent(token)}">${t('go_to_dashboard') || 'Aller au dashboard'}</a></div></div>`;
@@ -298,24 +328,37 @@ async function setupDashboard() {
 
   try {
     const profileRes = await Api.getPublicProfile(token);
-    if (profileRes.ok && profileRes.data && profileRes.data.username) {
-      const username = profileRes.data.username;
-      const publicLink = `${window.location.origin}/${username}`;
+    const payload = profileRes?.data?.data || profileRes?.data || {};
+    const username = payload.username;
+    if (profileRes.ok && username) {
+      DASH_USERNAME = username;
+      const publicLink = `${BASE_URL}/${username}`;
       const publicLinkInput = qs('#public-link-input');
       if (publicLinkInput) publicLinkInput.value = publicLink;
-      
+      const openBtn = qs('#open-link-btn');
+      openBtn?.addEventListener('click', () => { window.open(publicLink, '_blank', 'noopener'); });
       const copyLinkBtn = qs('#copy-link-btn');
-      if (copyLinkBtn) {
-        copyLinkBtn.addEventListener('click', async () => {
-          await navigator.clipboard.writeText(publicLink);
-          notyf?.success(t('copied') || 'Copié !');
-        });
-      }
-
-      const shareText = `Laisse-moi un message anonyme sur Whispr ! C'est ici : ${publicLink}`;
-      if (qs('#share-whatsapp')) qs('#share-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-      if (qs('#share-facebook')) qs('#share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicLink)}`;
-      if (qs('#share-snapchat')) qs('#share-snapchat').href = `https://www.snapchat.com/scan?uuid=YOUR-UUID-HERE&amp;share_url=${encodeURIComponent(publicLink)}`;
+      copyLinkBtn?.addEventListener('click', async () => { await navigator.clipboard.writeText(publicLink); notyf?.success(t('copied') || 'Copié !'); });
+      const qrBtn = qs('#qr-link-btn');
+      const qrWrap = qs('#qr-container');
+      const qrHost = qs('#qr-code');
+      qrBtn?.addEventListener('click', () => {
+        if (!qrWrap || !qrHost) return;
+        const visible = qrWrap.style.display !== 'none';
+        if (visible) { qrWrap.style.display = 'none'; return; }
+        qrWrap.style.display = 'flex';
+        if (window.QRCode) {
+          qrHost.innerHTML = '';
+          new window.QRCode(qrHost, { text: publicLink, width: 160, height: 160, colorDark: '#000000', colorLight: '#ffffff' });
+        } else {
+          qrHost.textContent = publicLink;
+        }
+      });
+      const shareText = `Hey laisse-moi un message anonyme sur Whispr ! \n C'est ici : ${publicLink}`;
+      const wa = qs('#share-whatsapp'); if (wa) wa.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      const tg = qs('#share-telegram'); if (tg) tg.href = `https://t.me/share/url?url=${encodeURIComponent(publicLink)}&text=${encodeURIComponent(shareText)}`;
+      const tw = qs('#share-twitter'); if (tw) tw.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(publicLink)}`;
+      const em = qs('#share-email'); if (em) em.href = `mailto:?subject=${encodeURIComponent('Whispr')}&body=${encodeURIComponent(shareText)}`;
     } else {
       notyf?.error(t('profile_error') || 'Erreur lors du chargement du profil.');
     }
@@ -338,7 +381,7 @@ async function setupDashboard() {
     const { renderStats } = await import('./stats.js'); 
     await renderStats(canvas, token, r); 
   }
-  rangeBtns.forEach(b => b.addEventListener('click', () => loadRange(b.getAttribute('data-range')))); await loadRange('7d');
+  rangeBtns.forEach(b => b.addEventListener('click', () => loadRange(b.getAttribute('data-range')))); await loadRange('30d');
   
  const btnPush = qs('#btn-push'); 
   if (btnPush && VAPID_PUBLIC_KEY) {

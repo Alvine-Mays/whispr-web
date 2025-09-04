@@ -121,7 +121,7 @@ export async function shareMessageImage(node, username, fallbackText) {
 
       await navigator.share({
         title: 'CyberFusion | Whispr',
-        text: fallbackText || `Partagé via Whispr. Envoie-moi un message : ${window.location.origin}/${username}`,
+        text: fallbackText || `Partagé via Whispr. Envoie-moi un message : ${BASE_URL}/${username}`,
         files: [file]
       });
       return { ok: true };

@@ -1,6 +1,83 @@
 <!doctype html>
 <html lang="fr" data-theme="dark">
 <head>
+<script type="text/javascript">
+  // This is a CodeSandbox injection script that's used to
+  // add navigation and inspector functionality to the preview
+  (function () {
+    // 1) Get the <script> tag that's currently running:
+    var me = document.currentScript;
+
+    // 2) Create the blocking‐style <script> to load:
+    var script = document.createElement("script");
+    script.src = "https://codesandbox.io/p/preview-protocol.js";
+
+    // By default a dynamically‐inserted <script> is async=true.
+    // Turn async off to make it behave like a normal blocking <script>:
+    script.async = false;
+    // (Do NOT set defer.)
+
+    // 3) Insert it immediately after the current <script>:
+    me.parentNode.insertBefore(script, me);
+  })();
+
+  const isIFramePreview = window.top !== window.self;
+
+  // Only run this script in editor context
+  if (isIFramePreview) {
+    // This script is used to enable Chrome DevTools functionality
+    (function () {
+      var script = document.createElement("script");
+      script.src =
+        "https://codesandbox.io/p/chrome-devtool/protocol/index.js";
+
+      script.onload = () => {
+        const devtoolProtocol = window.chobitsu;
+        if (devtoolProtocol) {
+          window.addEventListener("message", (event) => {
+            const { type, data } = event.data;
+
+            if (type === "FROM_DEVTOOL") {
+              devtoolProtocol.sendRawMessage(data);
+            }
+          });
+
+          devtoolProtocol.setOnMessage((data) => {
+            if (data.includes('"id":"tmp')) {
+              return;
+            }
+
+            window.parent.postMessage({ type: "TO_DEVTOOL", data }, "*");
+          });
+
+          devtoolProtocol.sendRawMessage(
+            `{"id":5,"method":"Runtime.enable","params":{}}`
+          );
+        }        
+      }
+
+      (document.head || document.documentElement).prepend(script);
+    })();
+  }
+
+  if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ === "undefined") {
+    let nextID = 0;
+    let hook = (__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
+      renderers: new Map(),
+      supportsFiber: true,
+      inject: (renderer) => {
+        const id = nextID++;
+        hook.renderers.set(id, renderer);
+        return id;
+      },
+      onScheduleFiberRoot() {},
+      onCommitFiberRoot() {},
+      onCommitFiberUnmount() {},
+    });
+  }
+
+  document.currentScript.remove();
+</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d0c12">
@@ -36,21 +113,27 @@
       </p>
     </section>
     
-    <section class="section card reveal">
+    <!-- <section class="section card reveal">
       <h2 style="text-align: center; margin-top: 0;">Partagez votre lien</h2>
       <div id="share-link-section">
-        <div style="font-weight:700; text-align: center; margin-bottom: 12px;" data-i18n="your_link">Votre lien anonyme</div>
+        <div style="font-weight:700; text-align: center; margin-bottom: 12px;" data-i18n="your_link">Votre lien public</div>
         <div class="input-group">
           <input id="public-link-input" class="input" readonly style="flex-grow: 1;">
+          <button class="icon-btn" id="open-link-btn" data-i18n="open_public">Ouvrir</button>
+          <button class="icon-btn" id="qr-link-btn">QR</button>
           <button class="icon-btn primary" id="copy-link-btn" data-i18n="copy">Copier</button>
         </div>
-        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 16px;">
-          <a id="share-whatsapp" href="#" class="icon-btn" data-i18n="share_whatsapp">WhatsApp</a>
-          <a id="share-facebook" href="#" class="icon-btn" data-i18n="share_facebook">Facebook</a>
-          <a id="share-snapchat" href="#" class="icon-btn" data-i18n="share_snapchat">Snapchat</a>
+        <div id="qr-container" style="display:none; justify-content:center; margin-top:12px;">
+          <div id="qr-code" style="background:var(--bg-soft); padding:10px; border-radius:12px; border:1px solid var(--border);"></div>
+        </div>
+        <div class="share-row" style="display: flex; justify-content: center; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
+          <a id="share-whatsapp" href="#" class="icon-btn">WhatsApp</a>
+          <a id="share-telegram" href="#" class="icon-btn">Telegram</a>
+          <a id="share-twitter" href="#" class="icon-btn">X/Twitter</a>
+          <a id="share-email" href="#" class="icon-btn">Email</a>
         </div>
       </div>
-    </section>
+    </section> -->
 
     <section class="section card reveal">
       <h2 style="text-align: center; margin-top: 0;">Statistiques</h2>
@@ -106,8 +189,15 @@
       <div id="modal-message-text" class="msg"></div>
       <hr class="sep">
       <div id="modal-message-meta" class="meta"></div>
-      <div class="modal-actions">
-        <button id="btn-share-image" class="icon-btn primary" data-i18n="share_image">Partager en image</button>
+      <div class="modal-actions" id="modal-share-actions">
+        <div class="share-row" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <a id="modal-share-whatsapp" href="#" class="icon-btn sm">WhatsApp</a>
+          <a id="modal-share-telegram" href="#" class="icon-btn sm">Telegram</a>
+          <a id="modal-share-twitter" href="#" class="icon-btn sm">X/Twitter</a>
+          <a id="modal-share-email" href="#" class="icon-btn sm">Email</a>
+          <button id="btn-share-image" class="icon-btn primary sm" data-i18n="share_image">Partager en image</button>
+          <button id="btn-download-image" class="icon-btn sm" data-i18n="download_image">Télécharger l’image</button>
+        </div>
       </div>
     </div>
   </div>
@@ -118,6 +208,7 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script type="module">
     import { initApp } from '/js/main.js';
     initApp();
