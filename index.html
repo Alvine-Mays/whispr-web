@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0c12">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+  <title>Whispr</title>
+</head>
+<body data-page="landing">
+  <header class="site-header">
+    <div class="bar container">
+      <div class="brand">
+        <img class="logo" src="/assets/icons/icon-192.png" alt="logo">
+        <span class="name" data-i18n="app_name">Whispr</span>
+      </div>
+      <div class="controls">
+        <button class="icon-btn" data-lang="fr" data-i18n="fr">FR</button>
+        <button class="icon-btn" data-lang="en" data-i18n="en">EN</button>
+        <button class="icon-btn" data-theme-toggle="auto" data-i18n="theme_auto">Auto</button>
+        <button class="icon-btn" data-theme-toggle="light" data-i18n="theme_light">Clair</button>
+        <button class="icon-btn" data-theme-toggle="dark" data-i18n="theme_dark">Sombre</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section hero reveal">
+      <h1 class="title">
+        La parole est à eux. <br>L'<span class="gradient">écoute</span> est à vous.
+      </h1>
+      <p class="subtitle">
+        Créez un lien anonyme, partagez-le et découvrez ce que vos amis et abonnés pensent vraiment, sans filtre.
+      </p>
+    </section>
+
+    <section class="section card reveal">
+      <h2 style="text-align: center; margin-top: 0;">Obtenez votre lien anonyme</h2>
+      <form id="create-user-form">
+        <label for="in-username" style="font-weight: bold; display: block; margin-bottom: 8px;">Choisissez votre pseudo</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 14px; top: 12px; color: var(--muted);">@</span>
+          <input id="in-username" class="input" placeholder="nomdutilisateur" autocomplete="off" style="padding-left: 30px;"/>
+        </div>
+        <div style="height:16px"></div>
+        <label for="in-bio" style="font-weight: bold; display: block; margin-bottom: 8px;">Bio (optionnel)</label>
+        <textarea id="in-bio" class="input" placeholder="Une courte description de vous..."></textarea>
+        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+          <button type="submit" class="icon-btn primary" data-i18n="create_link">Créer mon lien</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="signup-result" class="section"></section>
+
+    <section class="section reveal">
+      <div class="card">
+        <h2 style="text-align: center; margin-top: 0;">Comment ça marche ?</h2>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div>
+            <h3 style="margin-top: 0;">1. Créez votre lien</h3>
+            <p>Choisissez un nom d'utilisateur et générez votre lien anonyme en quelques secondes. C'est gratuit et ça ne nécessite aucune information personnelle.</p>
+          </div>
+          <div>
+            <h3 style="margin-top: 0;">2. Partagez-le partout</h3>
+            <p>Copiez votre lien et partagez-le sur vos réseaux sociaux, dans votre bio, ou avec vos amis. Laissez la magie opérer !</p>
+          </div>
+          <div>
+            <h3 style="margin-top: 0;">3. Recevez et gérez vos messages</h3>
+            <p>Accédez à votre tableau de bord privé pour lire les messages reçus, les partager en image, ou y réagir. Seul vous pouvez voir les messages.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-brand">
+        <img class="logo" src="/assets/icons/icon-192.png" alt="logo" width="24" height="24">
+        <span>Whispr</span>
+      </div>
+      <div class="footer-links">
+        <a href="/">Accueil</a> 
+      </div>
+      <div class="footer-copy">
+        Développé par Server Gold – Tous droits réservés © 2025 CyberFusion Group
+      </div>
+    </div>
+  </footer>
+
+  <div class="install-banner">
+    <div class="inner container">
+      <div class="grow">Whispr — PWA</div>
+      <button id="btn-install" class="icon-btn primary" data-i18n="install">Installer l’application</button>
+      <button id="btn-install-cancel" class="icon-btn" data-i18n="cancel">Annuler</button>
+  </div>
+
+  <script src="/env.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script type="module">
+      import { initApp } from '/js/main.js';
+      initApp();
+  </script>
+</body>
+</html>

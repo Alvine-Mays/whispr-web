@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0c12">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+  <title>Whispr — Page publique</title>
+</head>
+<body data-page="public">
+  <header class="site-header">
+    <div class="bar container">
+      <div class="brand">
+        <img class="logo" src="/assets/icons/icon-192.png" alt="logo">
+        <span class="name">Whispr</span>
+      </div>
+      <div class="controls">
+        <button class="icon-btn" data-lang="fr" data-i18n="fr">FR</button>
+        <button class="icon-btn" data-lang="en" data-i18n="en">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section card">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div id="avatar" style="width:56px;height:56px;border-radius:16px;background:var(--bg-soft);border:1px solid var(--border); flex-shrink: 0;"></div>
+        <div>
+          <div id="display-username" style="font-weight:700; font-size: 20px;">@username</div>
+          <div id="bio" style="font-size:14px;color:var(--muted);">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <form id="public-form" class="reveal">
+        <textarea id="message" maxlength="1000" class="input" data-i18n="message_placeholder" placeholder="Laissez un message anonyme..."></textarea>
+        <input type="text" id="hp" name="hp" value="" style="display:none" autocomplete="off">
+        <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+          <button id="btn-send" class="icon-btn primary" type="submit" data-i18n="send">Envoyer</button>
+        </div>
+      </form>
+      <div id="cta-own-link" class="section" style="padding:0; margin-top: 24px;"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-brand">
+        <img class="logo" src="/assets/icons/icon-192.png" alt="logo" width="24" height="24">
+        <span>Whispr</span>
+      </div>
+      <div class="footer-links">
+        <a href="/">Accueil</a> 
+      </div>
+      <div class="footer-copy">
+        Développé par Server Gold – Tous droits réservés © 2025 CyberFusion Group
+      </div>
+    </div>
+  </footer>
+
+  <div class="install-banner">
+    <div class="inner container">
+      <div class="grow">Whispr — PWA</div>
+      <button id="btn-install" class="icon-btn primary" data-i18n="install">Installer l’application</button>
+      <button id="btn-install-cancel" class="icon-btn" data-i18n="cancel">Annuler</button>
+    </div>
+  </div>
+
+  <script src="/env.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.2.0/dist/dom-to-image-more.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script type="module">
+    import { initApp } from '/js/main.js';
+    import { Api } from '/js/api.js';
+    import { getUsernameFromPath } from '/js/main.js';
+    
+    window.addEventListener('DOMContentLoaded', async () => {
+      const username = getUsernameFromPath();
+      if (!username) return;
+      const res = await Api.getPublicProfile(username);
+      if (res.ok) {
+        const payload = res.data?.data || res.data || {};
+        document.getElementById('display-username').textContent = '@' + username;
+        document.getElementById('bio').textContent = payload.bio || '';
+        if (payload.avatarUrl) {
+          const av = document.getElementById('avatar');
+          av.style.background = `center/cover no-repeat url(${encodeURI(payload.avatarUrl)})`;
+        }
+      }
+    });
+    initApp();
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Redirections Netlify pour supporter les routes dynamiques sans backend
+
+[[redirects]]
+  from = "/dashboard/*"
+  to = "/dashboard.html"
+  status = 200
+
+# Route publique: /:username → public-page.html
+[[redirects]]
+  from = "/:username"
+  to = "/public-page.html"
+  status = 200
+
+# Laisser passer les assets et fichiers existants
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=600"
